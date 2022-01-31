@@ -1,5 +1,6 @@
 from ast import arg
 import asyncio
+import atexit
 from turtle import title
 from typing import List
 import tornado.ioloop
@@ -7,7 +8,7 @@ import tornado.web
 import base64
 from ptyprocess import PtyProcess
 import os
-
+from . import manager
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
@@ -46,42 +47,39 @@ class ResizeHandler(tornado.web.RequestHandler):
         cols = int(self.get_argument('cols'))
         self.process.setwinsize(rows, cols)
 
+
 class XTerm:
-    def __init__(self, argv: List, port=None):
+    def __init__(self, argv: List, port=10000):
         self.argv = argv
         self.port = port
 
     def open(self):
         port = self.port
-        argv = self.argv    
+        argv = self.argv
         if not argv or len(argv) == 0:
             argv = [os.getenv("SHELL", '/bin/sh')]
-        process = PtyProcess.spawn(argv)
-        staticFolder = os.path.join(os.path.dirname(__file__), "client/dist")
 
-        app = tornado.web.Application([
-            (r"/out", StdoutHandler, dict(process=process)),
-            (r"/in/(.*)", StdinHandler, dict(process=process)),
-            (r"/resize", ResizeHandler, dict(process=process)),
-            (r"/(.*\.js)", tornado.web.StaticFileHandler, {"path": staticFolder}),
-            (r'/', MainHandler),
-        ])
-        bindport = 10000 if not port else port
-        while True:
-            try:
-                app.listen(bindport, "127.0.0.1")
-                print(f"🚀  Listen to {bindport}")
-                break
-            except Exception as e:
-                ERRORNO_ADDRESS_ALREADY_IN_USE = 48
+        try:
+            process = PtyProcess.spawn(argv)
+            staticFolder = os.path.join(
+                os.path.dirname(__file__), "client/dist")
+        except Exception as e:
+            manager.write_info_file(os.getpid(), False, str(e))
 
-                if isinstance(e, OSError) and e.errno == ERRORNO_ADDRESS_ALREADY_IN_USE:
-                    print(f"Port {bindport} is in use.")
-                    if not port:
-                        bindport = bindport+1
-                        continue
-                    else:
-                        raise e
-    
+        try:
+            app = tornado.web.Application([
+                (r"/out", StdoutHandler, dict(process=process)),
+                (r"/in/(.*)", StdinHandler, dict(process=process)),
+                (r"/resize", ResizeHandler, dict(process=process)),
+                (r"/(.*\.js)", tornado.web.StaticFileHandler,
+                 {"path": staticFolder}),
+                (r'/', MainHandler),
+            ])
+            app.listen(port, "127.0.0.1")
+            print(f"🚀  Listen to {port}")
+            manager.write_info_file(os.getpid(), True)
+        except Exception as e:
+            manager.write_info_file(os.getpid(), False, str(e))
+            raise e
+
         tornado.ioloop.IOLoop.current().start()
-        
