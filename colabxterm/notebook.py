@@ -73,21 +73,22 @@ def _xterm_magic(args_string):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(('localhost', port)) == 0
 
-    parsed_args = shlex.split(args_string, comments=True, posix=True) 
+    parsed_args = shlex.split(args_string, comments=True, posix=True)
     height = 800
     port = 10000
     while True:
         if not is_port_in_use(port):
             break
-        port=port+1
+        port = port+1
 
-    manager.start(parsed_args, port)            
+    manager.start(parsed_args, port)
     fn = {
         _CONTEXT_COLAB: _display_colab,
         _CONTEXT_IPYTHON: _display_ipython,
         _CONTEXT_NONE: _display_cli,
     }[_get_context()]
     return fn(port=port, height=height)
+
 
 def _display_colab(port, height):
     import IPython.display
@@ -148,6 +149,7 @@ def _display_ipython(port, height):
 def _display_cli(port, height):
     message = "Please visit http://localhost:%d in a web browser." % port
     print(message)
+
 
 def list():
     infos = manager.get_all()

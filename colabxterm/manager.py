@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import time
 
+
 def _get_info_file_path(pid):
     info_dir = os.path.join(tempfile.gettempdir(), ".colab-xterm-info")
     try:
@@ -30,10 +31,12 @@ def write_info_file(pid, success, reason=None):
     with open(_get_info_file_path(pid), "w") as outfile:
         outfile.write(payload)
 
+
 def read_info_file(pid):
     with open(_get_info_file_path(pid), "r") as infile:
         content = infile.read()
-        return json.loads(content)        
+        return json.loads(content)
+
 
 def remove_info_file(pid):
     try:
@@ -56,14 +59,9 @@ def start(arguments, port, timeout=datetime.timedelta(seconds=60)):
         subprocess_result = p.poll()
         if subprocess_result is not None:
             return
-        if os.path.exists(_get_info_file_path(p.pid)):       
+        if os.path.exists(_get_info_file_path(p.pid)):
             result = read_info_file(p.pid)
             if not result:
                 return {"succes": False, "reason": "Unknown error"}
             else:
                 return result
-
-
-    
-        
-

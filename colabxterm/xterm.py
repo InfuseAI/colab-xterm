@@ -10,6 +10,7 @@ from ptyprocess import PtyProcess
 import os
 from . import manager
 
+
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.render('client/dist/index.html')
