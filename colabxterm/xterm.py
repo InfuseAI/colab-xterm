@@ -21,7 +21,7 @@ class StdoutHandler(tornado.web.RequestHandler):
     async def get(self):
         loop = asyncio.get_event_loop()
         try:
-            b = await loop.run_in_executor(None, self.process.read)
+            b = await loop.run_in_executor(None, lambda:  self.process.read(4*1024*1024))
             self.write(b)
             await self.flush()
         except EOFError as e:
