@@ -11,6 +11,8 @@ function main() {
     (window as any).fitAddon = fitAddon;
     term.loadAddon(fitAddon);
     term.open(document.getElementById('terminal'));
+
+    // handle resize
     const handleResize = () => {
         term.element.parentElement.style.height = (window.innerHeight - 16) + "px"
         fitAddon.fit();
@@ -22,26 +24,40 @@ function main() {
 
     // handle input
     const queue: string[] = [];
-    const sendData = lodash.throttle(() => {
-        let data = queue.join('')
-        let base64str = window.btoa(data);
-        fetch("/in/" + base64str);
-        queue.length = 0;
-    }, 100);
-
     term.onData((data) => {
         queue.push(data);
-        sendData();
     });
+    (async () => {
+        const sleep = (time: number) => new Promise((resolve) => setTimeout(resolve, time))
+
+        try {
+            while (true) {
+                await sleep(100);
+                if (!lodash.isEmpty(queue)) {
+                    let data = queue.join('');
+                    let base64str = window.btoa(data);
+                    queue.length = 0;
+                    await fetch("/in/" + base64str);
+                }
+            }
+        } finally {
+            console.log("input disconnect!");
+        }
+    })();
+
 
     // handle output
     async function pullOutput() {
-        while(true) {
-            const response = await fetch("/out");
-            const byteArray = new Uint8Array(await response.arrayBuffer());
-            if (response) {                
-                term.write(byteArray);
-            }            
+        try {
+            while (true) {
+                const response = await fetch("/out");
+                const byteArray = new Uint8Array(await response.arrayBuffer());
+                if (response) {
+                    term.write(byteArray);
+                }
+            }
+        } finally {
+            console.log("input disconnect!");
         }
     }
     pullOutput();
