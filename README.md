@@ -23,4 +23,4 @@ Try it out in the demo notebook.
 - Does not block your kernel
 
 # Screenshots
-![](assets/colab-xterm-htop.png)
+![](assets/colab-xterm.png)
