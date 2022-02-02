@@ -10,7 +10,7 @@ Colab-xterm allows you to open a terminal in a cell.
     ```
 2. Open a terminal
     ```
-    %term
+    %xterm
     ```
 3. Enjoy!
 
