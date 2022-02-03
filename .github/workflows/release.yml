@@ -1,0 +1,40 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Release to PyPI
+
+on:
+  push:
+    tags: 'v*'
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ 3.6 ]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Release
+        run: |
+          # get version from GITHUB_REF
+          # input: "refs/tags/v0.1.0"
+          # outpu: "0.1.0"
+
+          # update version number
+          echo "${GITHUB_REF:11}" > ./colabxterm/VERSION
+
+          # generate pypirc
+          echo "$PYPIRC" > $HOME/.pypirc
+
+          # release to PyPI
+          make release
+        env:
+          PYPIRC: ${{ secrets.PYPI }}
