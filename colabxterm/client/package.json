@@ -28,9 +28,7 @@
     "serve": "webpack serve"
   },
   "dependencies": {
-    "buffer": "^6.0.3",
     "lodash": "^4.17.21",
-    "xm": "^1.0.7-test.0.0.0",
     "xterm": "^4.16.0",
     "xterm-addon-fit": "^0.5.0"
   }
