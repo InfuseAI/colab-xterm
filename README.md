@@ -5,7 +5,7 @@ Colab-xterm allows you to open a terminal in a cell.
 
 1. Install package and load the extension
     ```
-    !pip install git+https://github.com/popcornylu/colab-xterm
+    !pip install colab-xterm
     %load_ext colabxterm
     ```
 2. Open a terminal

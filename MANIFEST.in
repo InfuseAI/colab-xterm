@@ -1,2 +1,1 @@
-include colabxterm/client/dist/index.html
-include colabxterm/client/dist/main.js
+prune colabxterm/client/node_modules
