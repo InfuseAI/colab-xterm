@@ -76,6 +76,26 @@ def _xterm_magic(args_string):
     parsed_args = shlex.split(args_string, comments=True, posix=True)
     height = 800
     port = 10000
+
+    # setup parameter from parsed_args to support the following format
+    # %xterm height=300 port=400
+    for parameter in parsed_args:
+      kv_pair:list[str] = str(parameter).split('=')
+      if(len(kv_pair)==2):
+        k=kv_pair[0]
+        v=kv_pair[1]
+        try:
+          vint = int(v)
+        except ValueError:
+          pass
+        else:
+          if(k=="height"):
+            height=int(v)
+          elif(k=="port"):
+            port=int(v)
+    # clean parsed_args as empty list to avoid the disability of the magic line command
+    parsed_args=[]
+
     while True:
         if not is_port_in_use(port):
             break
