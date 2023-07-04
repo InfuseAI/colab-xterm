@@ -22,5 +22,16 @@ Try it out in the demo notebook.
 - TTY support
 - Does not block your kernel
 
+# Options
+
+```
+%xterm height=1000 port=10001
+```
+
+option | description
+-------|-----------
+height | The height of the terminal panel
+port | The server port
+
 # Screenshots
 ![](assets/colab-xterm.png)
