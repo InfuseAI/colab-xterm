@@ -35,3 +35,7 @@ port | The server port
 
 # Screenshots
 ![](assets/colab-xterm.png)
+
+# Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=InfuseAI/colab-xterm&type=Date)](https://star-history.com/#InfuseAI/colab-xterm&Date)
