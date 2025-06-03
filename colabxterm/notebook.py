@@ -73,91 +73,106 @@ def _xterm_magic(args_string):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(('localhost', port)) == 0
 
-    parsed_args = shlex.split(args_string, comments=True, posix=True)
+    # Defaults
     height = 800
     port = 10000
+    font_size = 14
+    font_family = "monospace"
+    command = None
 
-    # Setup parameter from parsed_args to support the following format.
-    # %xterm height=300 port=10001
+    parsed_args = shlex.split(args_string, comments=True, posix=True)
+
+    # Parse arguments
+    user_args = []
     for parameter in parsed_args:
-        kv_pair:list[str] = str(parameter).split('=')
+        kv_pair = str(parameter).split('=', 1)
         if len(kv_pair) == 2:
-            k = kv_pair[0]
-            v = kv_pair[1]
-            if v.isdigit():
-                if k == "height":
-                    height = int(v)
-                elif k == "port":
-                    port = int(v)
+            k, v = kv_pair
+            if k == "height" and v.isdigit():
+                height = int(v)
+            elif k == "port" and v.isdigit():
+                port = int(v)
+            elif k == "fontsize" and v.isdigit():
+                font_size = int(v)
+            elif k == "fontfamily":
+                font_family = v
+            elif k == "command":
+                command = v
+            else:
+                user_args.append(parameter)
+        else:
+            user_args.append(parameter)
     # Clean parsed_args as an empty list to avoid the disability of the magic line command.
-    parsed_args=[]
+    parsed_args = []
 
+    # Find available port
     while True:
         if not is_port_in_use(port):
             break
-        port = port+1
+        port += 1
 
-    manager.start(parsed_args, port)
+    # Pass command to manager if needed
+    # If 'command' is specified, put it as the first argument to manager.start
+    manager_args = []
+    if command:
+        manager_args = [command]
+    manager.start(manager_args, port)
+
+    # Build query parameters for the frontend
+    query_params = [
+        f"fontsize={font_size}",
+        f"fontfamily={html.escape(font_family)}"
+    ]
+    if command:
+        query_params.append(f"command={html.escape(command)}")
+    query_string = "&".join(query_params)
+
     fn = {
-        _CONTEXT_COLAB: _display_colab,
-        _CONTEXT_IPYTHON: _display_ipython,
-        _CONTEXT_NONE: _display_cli,
+        _CONTEXT_COLAB: lambda **kwargs: _display_colab(query_string=query_string, **kwargs),
+        _CONTEXT_IPYTHON: lambda **kwargs: _display_ipython(query_string=query_string, **kwargs),
+        _CONTEXT_NONE: lambda **kwargs: _display_cli(**kwargs),
     }[_get_context()]
     return fn(port=port, height=height)
 
 
-def _display_colab(port, height):
+def _display_colab(port, height, query_string=""):
     import IPython.display
 
-    shell = """
-        (async () => {
-            const url = new URL(await google.colab.kernel.proxyPort(%PORT%, {'cache': true}));
+    shell = f"""
+        (async () => {{
+            const url = new URL(await google.colab.kernel.proxyPort({port}, {{'cache': true}}));
+            url.search = "{'?' + query_string if query_string else ''}";
             const iframe = document.createElement('iframe');
             iframe.src = url;
             iframe.setAttribute('width', '100%');
-            iframe.setAttribute('height', '%HEIGHT%');
+            iframe.setAttribute('height', '{height}');
             iframe.setAttribute('frameborder', 0);
             document.body.appendChild(iframe);
-        })();
+        }})();
     """
-    replacements = [
-        ("%PORT%", "%d" % port),
-        ("%HEIGHT%", "%d" % height),
-    ]
-    for (k, v) in replacements:
-        shell = shell.replace(k, v)
     script = IPython.display.Javascript(shell)
     IPython.display.display(script)
 
 
-def _display_ipython(port, height):
+def _display_ipython(port, height, query_string=""):
     import IPython.display
 
     frame_id = "xterm-frame-{:08x}".format(random.getrandbits(64))
-    shell = """
-      <iframe id="%HTML_ID%" width="100%" height="%HEIGHT%" frameborder="0">
-      </iframe>
+    shell = f"""
+      <iframe id="{html.escape(frame_id, quote=True)}" width="100%" height="{height}" frameborder="0"></iframe>
       <script>
-        (function() {
-          const frame = document.getElementById(%JSON_ID%);
-          const url = new URL(%URL%, window.location);
-          const port = %PORT%;
-          if (port) {
+        (function() {{
+          const frame = document.getElementById({json.dumps(frame_id)});
+          const url = new URL({json.dumps("/")}, window.location);
+          const port = {port};
+          if (port) {{
             url.port = port;
-          }
+          }}
+          url.search = "{'?' + query_string if query_string else ''}";
           frame.src = url;
-        })();
+        }})();
       </script>
     """
-    replacements = [
-        ("%HTML_ID%", html.escape(frame_id, quote=True)),
-        ("%JSON_ID%", json.dumps(frame_id)),
-        ("%HEIGHT%", "%d" % height),
-        ("%PORT%", "%d" % port),
-        ("%URL%", json.dumps("/")),
-    ]
-    for (k, v) in replacements:
-        shell = shell.replace(k, v)
     iframe = IPython.display.HTML(shell)
     IPython.display.display(iframe)
 
