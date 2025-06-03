@@ -5,7 +5,7 @@ import os
 import subprocess
 import tempfile
 import time
-
+import sys
 
 def _get_info_file_path(pid):
     info_dir = os.path.join(tempfile.gettempdir(), ".colab-xterm-info")
@@ -50,8 +50,8 @@ def remove_info_file(pid):
 
 def start(arguments, port, timeout=datetime.timedelta(seconds=60)):
     p = subprocess.Popen(
-        ["python", "-m", "colabxterm", "--port", str(port)] + arguments,
-    )
+    [sys.executable, "-m", "colabxterm", "--port", str(port)] + arguments,
+)
 
     poll_interval_seconds = 0.5
     while True:

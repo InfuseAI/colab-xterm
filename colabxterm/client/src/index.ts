@@ -4,9 +4,28 @@ import { Terminal } from "xterm";
 import { FitAddon } from 'xterm-addon-fit';
 import lodash from 'lodash';
 
+// Utility to parse query params from the URL
+function getQueryParam(key: string): string | null {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(key);
+}
+
 function main() {
-    const term = new Terminal();
+    const fontFamily = getQueryParam('fontfamily') || 'monospace';
+    const fontSizeRaw = getQueryParam('fontsize');
+    const fontSize = fontSizeRaw && !isNaN(Number(fontSizeRaw))
+        ? parseInt(fontSizeRaw, 10)
+        : 14;
+
+    // If you want to use a command parameter, retrieve it as well:
+    const command = getQueryParam('command'); // Not used directly here, backend executes it
+
+    const term = new Terminal({
+        fontFamily,
+        fontSize
+    });
     const fitAddon = new FitAddon();
+
     (window as any).term = term;
     (window as any).fitAddon = fitAddon;
     term.loadAddon(fitAddon);
@@ -14,9 +33,11 @@ function main() {
 
     // handle resize
     const handleResize = () => {
-        term.element.parentElement.style.height = (window.innerHeight - 16) + "px"
+        if (term.element && term.element.parentElement) {
+            term.element.parentElement.style.height = (window.innerHeight - 16) + "px";
+        }
         fitAddon.fit();
-        fetch("/resize?rows=" + term.rows + "&cols=" + term.cols)
+        fetch("/resize?rows=" + term.rows + "&cols=" + term.cols);
     };
 
     handleResize();
@@ -28,8 +49,7 @@ function main() {
         queue.push(data);
     });
     (async () => {
-        const sleep = (time: number) => new Promise((resolve) => setTimeout(resolve, time))
-
+        const sleep = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
         try {
             while (true) {
                 await sleep(100);
@@ -44,7 +64,6 @@ function main() {
             console.log("input disconnect!");
         }
     })();
-
 
     // handle output
     async function pullOutput() {
@@ -64,4 +83,3 @@ function main() {
 }
 
 window.onload = main
-
